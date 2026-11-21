@@ -19,7 +19,7 @@ def generate_scenario(NUM_DEV, NUM_TIMEW, n, p, seed):
             revoked.append((i, rev_window, k))
     return revoked
 
-def count_original(revoked):        # Cui et al. proposition
+def count_original(revoked):        # original design (Cui et al.)
     inserts = deletes = 0
     for i, r_w, k in revoked:
         inserts += k
@@ -27,7 +27,7 @@ def count_original(revoked):        # Cui et al. proposition
 
     return (inserts, deletes)
 
-def count_windows(revoked):     # own proposition
+def count_windows(revoked):     # proposed design
     inserts = discards = 0
     used_windows = []
     for i, r_w, k in revoked:
