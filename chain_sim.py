@@ -1,5 +1,6 @@
 import json
 from web3 import Web3
+from simulation import generate_scenario
 
 # connect to the local blockchain
 w3 = Web3(Web3.HTTPProvider("http://127.0.0.1:8545"))
@@ -50,26 +51,64 @@ def pseudonym(device, window):
     return Web3.keccak(text=text)
 
 
+# runs the original design (Cui et al.) - one filter, per-entry deletion
+def run_original(revoked):
+    contract = deploy("OriginalFilter")
+    tx_count = 0
+    gas_total = 0
 
-def test():
-    original = deploy("OriginalFilter")
-    windows = deploy("WindowFilter")
-    p = pseudonym(7, 5)
+    for device, window, k in revoked:
+        for j in range(window, window + k):
+            p = pseudonym(device, j)
 
-    gas = send(original.functions.insert(p))
-    print("Original insert gas:", gas)
-    print("Original isRevoked:", original.functions.isRevoked(p).call())   # True
+            gas_total += send(contract.functions.insert(p))
+            tx_count += 1
 
-    gas = send(original.functions.remove(p))
-    print("Original remove gas:", gas)
-    print("Original isRevoked:", original.functions.isRevoked(p).call())   # False
+            gas_total += send(contract.functions.remove(p))
+            tx_count += 1
 
-    gas = send(windows.functions.insert(5, p))
-    print("Window insert gas:", gas)
-    print("Window isRevoked:", windows.functions.isRevoked(5, p).call())   # True
+    return tx_count, gas_total
 
-    gas = send(windows.functions.discardWindow(5))
-    print("Window discard gas:", gas)
-    print("Window isRevoked:", windows.functions.isRevoked(5, p).call())   # False
 
-test()
+# runs the proposed design - one filter per time window, discarded as a whole
+def run_windows(revoked):
+    contract = deploy("WindowFilter")
+    tx_count = 0
+    gas_total = 0
+    used_windows = []
+
+    for device, window, k in revoked:
+        for j in range(window, window + k):
+            p = pseudonym(device, j)
+
+            gas_total += send(contract.functions.insert(j, p))
+            tx_count += 1
+
+            if j not in used_windows:
+                used_windows.append(j)
+
+    for i in used_windows:
+        gas_total += send(contract.functions.discardWindow(i))
+        tx_count += 1
+
+    return tx_count, gas_total
+
+
+# runs both designs 
+def run_on_chain(revoked):
+    original_tx, original_gas = run_original(revoked)
+    window_tx, window_gas = run_windows(revoked)
+
+    return original_tx, original_gas, window_tx, window_gas
+
+
+if __name__ == "__main__":
+    revoked = generate_scenario(1000, 100, 10, 0.05, seed=1)
+
+    original_tx, original_gas, window_tx, window_gas = run_on_chain(revoked)
+
+    print("Revoked devices:", len(revoked))
+    print(f"Original: {original_tx} transactions, {original_gas} gas")
+    print(f"Windows: {window_tx} transactions, {window_gas} gas")
+    print(f"Saved transactions: {(original_tx - window_tx) / original_tx * 100:.1f}%")
+    print(f"Saved gas:          {(original_gas - window_gas) / original_gas * 100:.1f}%")

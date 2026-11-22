@@ -2,7 +2,7 @@
 // version 0.8.0
 pragma solidity ^0.8.0;
 
-// own design: filter for each time window
+// proposed design - filter for each time window
 contract WindowFilter {
     // dictionary of revoked pseudonyms for each time window
     mapping(uint256 => mapping(bytes32 => bool)) revoked;

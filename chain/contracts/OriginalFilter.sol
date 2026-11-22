@@ -2,7 +2,7 @@
 // version 0.8.0
 pragma solidity ^0.8.0;
 
-// class that will live on the blockchain
+// original design - class that will live on the blockchain
 contract OriginalFilter {
     // dictionary of revoked pseudonyms (32 byte value)
     mapping(bytes32 => bool) revoked;

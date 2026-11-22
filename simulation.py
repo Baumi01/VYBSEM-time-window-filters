@@ -40,8 +40,9 @@ def count_windows(revoked):     # proposed design
     discards = len(used_windows)
     return inserts, discards
 
-rev = generate_scenario(NUM_DEV, NUM_TIMEW, n, p, seed=1)
 
-print("revocation: ", len(rev))
-print("base filter (insert, delete): ", count_original(rev))
-print("new filter (insert, discards): ", count_windows(rev))
+if __name__ == "__main__":
+    rev = generate_scenario(NUM_DEV, NUM_TIMEW, n, p, seed=1)
+    print("revocation: ", len(rev))
+    print("base filter (insert, delete): ", count_original(rev))
+    print("new filter (insert, discards): ", count_windows(rev))
